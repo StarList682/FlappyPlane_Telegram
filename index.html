@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Plane</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background: url('https://i.ibb.co/87JSpc9/sky.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        #game-container {
+            position: relative;
+            width: 320px;
+            height: 480px;
+            overflow: hidden;
+        }
+
+        #intro, #game-over {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: none; /* Remove background */
+            box-shadow: none; /* Remove white shadow */
+        }
+
+        #intro img, #game-over img {
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        #intro {
+            display: flex;
+        }
+
+        #game-over {
+            display: none;
+        }
+
+        #gameCanvas {
+            display: none;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.ibb.co/87JSpc9/sky.png') no-repeat center center;
+            background-size: cover;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="intro">
+            <img src="https://i.ibb.co/k8DwqXp/DotGears.png" alt="DotGears">
+            <img src="https://i.ibb.co/92tV36n/flappy.png" alt="Flappy Bird">
+            <img id="play-btn" src="https://i.ibb.co/s2jKF5G/play.png" alt="Play">
+            <img id="github-btn" src="https://i.ibb.co/5W8Wspt/github.png" alt="GitHub">
+        </div>
+        <canvas id="gameCanvas" width="320" height="480"></canvas>
+        <div id="game-over">
+            <img src="https://i.ibb.co/xCdMp6v/gameover.png" alt="Game Over">
+            <img id="play-again-btn" src="https://i.ibb.co/s2jKF5G/play.png" alt="Play Again">
+        </div>
+    </div>
+
+    <!-- Audio elements -->
+    <audio id="jumpSound" src="./sound/jump.mp3"></audio>
+    <audio id="fonSound" src="./sound/fon.mp3" loop></audio>
+    <audio id="dieSound" src="./sound/die.mp3"></audio>
+    <audio id="scoreSound" src="./sound/score.mp3"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const intro = document.getElementById('intro');
+            const gameOver = document.getElementById('game-over');
+            const playBtn = document.getElementById('play-btn');
+            const githubBtn = document.getElementById('github-btn');
+            const playAgainBtn = document.getElementById('play-again-btn');
+            const gameCanvas = document.getElementById('gameCanvas');
+            const ctx = gameCanvas.getContext('2d');
+            let gameStarted = false;
+            let gameLoop;
+            let birdY = 150;
+            let birdSpeed = 0;
+            const gravity = 0.25;
+            const bird = new Image();
+            bird.src = 'https://i.ibb.co/f1cmCh1/bird-1.png';
+            const pipeUp = new Image();
+            pipeUp.src = 'https://i.ibb.co/QmrzDjL/PipeUp.png';
+            const pipeDown = new Image();
+            pipeDown.src = 'https://i.ibb.co/F0bxsz6/PipeDown.png';
+            let pipes = [];
+            let score = 0;
+            let record = localStorage.getItem('flappyRecord') ? parseInt(localStorage.getItem('flappyRecord')) : 0;
+
+            // Audio elements
+            const jumpSound = document.getElementById('jumpSound');
+            const fonSound = document.getElementById('fonSound');
+            const dieSound = document.getElementById('dieSound');
+            const scoreSound = document.getElementById('scoreSound');
+
+            playBtn.addEventListener('click', startGame);
+            playAgainBtn.addEventListener('click', startGame);
+            githubBtn.addEventListener('click', () => {
+                window.open('https://github.com/StarList682/FlappyPlain_Telegram.git', '_blank');
+            });
+
+            function startGame() {
+                intro.style.display = 'none';
+                gameOver.style.display = 'none';
+                gameCanvas.style.display = 'block';
+                gameStarted = true;
+                birdY = 150;
+                birdSpeed = 0;
+                pipes = [];
+                score = 0;
+                gameLoop = setInterval(updateGame, 20);
+                fonSound.play(); // Start background music
+            }
+
+            function endGame() {
+                clearInterval(gameLoop);
+                gameCanvas.style.display = 'none';
+                gameOver.style.display = 'flex';
+                gameStarted = false;
+
+                dieSound.play(); // Play death sound
+
+                if (score > record) {
+                    record = score;
+                    localStorage.setItem('flappyRecord', record);
+                }
+            }
+
+            function updateGame() {
+                birdSpeed += gravity;
+                birdY += birdSpeed;
+
+                if (birdY + bird.height > gameCanvas.height || birdY < 0) {
+                    endGame();
+                }
+
+                if (pipes.length === 0 || pipes[pipes.length - 1].x < gameCanvas.width - 200) {
+                    const pipeHeight = Math.floor(Math.random() * (gameCanvas.height - 200)) + 50;
+                    pipes.push({ x: gameCanvas.width, y: pipeHeight });
+                }
+
+                pipes.forEach(pipe => {
+                    pipe.x -= 2;
+
+                    if (pipe.x + pipeUp.width < 0) {
+                        pipes.shift();
+                        score++;
+                        scoreSound.play(); // Play score sound
+                    }
+
+                    if ((birdY < pipe.y - pipeUp.height + 10 || birdY + bird.height > pipe.y + 100) &&
+                        (pipe.x < 80 && pipe.x + pipeUp.width > 50)) {
+                        endGame();
+                    }
+                });
+
+                ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+                ctx.drawImage(bird, 50, birdY);
+
+                pipes.forEach(pipe => {
+                    ctx.drawImage(pipeDown, pipe.x, pipe.y - pipeDown.height);
+                    ctx.drawImage(pipeUp, pipe.x, pipe.y + 100);
+
+                    // Prevent bird from passing through upper pipes
+                    if (birdY < pipe.y + pipeUp.height && birdY + bird.height > pipe.y) {
+                        if (50 + bird.width > pipe.x && 50 < pipe.x + pipeUp.width) {
+                            endGame();
+                        }
+                    }
+                });
+
+                ctx.fillStyle = '#000';
+                ctx.font = '20px Arial';
+                ctx.fillText('Score: ' + score, 10, 20);
+                ctx.fillText('Record: ' + record, 10, 50);
+            }
+
+            document.addEventListener('keydown', () => {
+                if (gameStarted) {
+                    birdSpeed = -4;
+                    jumpSound.play(); // Play jump sound
+                }
+            });
+
+            document.addEventListener('click', () => {
+                if (gameStarted) {
+                    birdSpeed = -4;
+                    jumpSound.play(); // Play jump sound
+                }
+            });
+        });
+    </script>
+</body>
+</html>
