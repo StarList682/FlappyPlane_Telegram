@@ -6,7 +6,7 @@ You can play it here [Telegram_BOT](http://t.me/FlappyPlane_StarList_bot)
 ![Example](Screen_Recording_20240712_030219_Telegram-ezgif.com-video-to-gif-converter.gif)
 
 
-#Donation
+# Donation
 
 - TON (Toncoin):  
   UQAnnU_n9fg21YtNQxyRPof7xbNkKCHNXdy1LYczGhGSeswf
